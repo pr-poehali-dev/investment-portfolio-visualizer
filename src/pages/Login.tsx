@@ -39,9 +39,17 @@ const Login = () => {
 
       const data = await response.json();
 
+      console.log('Response status:', response.status);
+      console.log('Response data:', data);
+
       if (response.ok) {
+        console.log('Setting token:', data.token);
+        console.log('Setting user:', data.user);
+        
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        
+        console.log('Token saved to localStorage:', localStorage.getItem('authToken'));
         
         toast({
           title: isLogin ? 'Вход выполнен' : 'Регистрация успешна',
