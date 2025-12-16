@@ -48,9 +48,7 @@ const Login = () => {
           description: `Добро пожаловать, ${data.user.name}!`,
         });
 
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 500);
+        window.location.replace('/');
       } else {
         toast({
           variant: 'destructive',
