@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Get empty portfolio",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-Auth-Token": "test-token"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "totalValue": "number",
+        "positions": "array",
+        "dividends": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
