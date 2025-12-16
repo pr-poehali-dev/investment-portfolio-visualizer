@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+
 
 const mockPortfolio = {
   totalValue: 2847650,
@@ -171,7 +171,9 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{formatCurrency(mockPortfolio.monthlyDividends)}</div>
-              <Progress value={65} className="mt-3 h-2" />
+              <div className="mt-3 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-full transition-all" style={{width: '65%'}} />
+              </div>
               <p className="text-xs text-muted-foreground mt-2">65% от годового плана</p>
             </CardContent>
           </Card>
@@ -442,7 +444,9 @@ const Index = () => {
                             <span className="font-medium">{position.ticker}</span>
                             <span className="text-muted-foreground">{percentage.toFixed(1)}%</span>
                           </div>
-                          <Progress value={percentage} className="h-2" />
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div className="bg-gradient-to-r from-purple-600 to-blue-600 h-full transition-all" style={{width: `${percentage}%`}} />
+                          </div>
                         </div>
                       );
                     })}
