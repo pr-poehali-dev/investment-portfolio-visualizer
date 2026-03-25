@@ -44,40 +44,43 @@ def transform_portfolio(raw) -> dict:
 
     items = raw if isinstance(raw, list) else raw.get('positions', raw.get('items', raw.get('data', [])))
 
+    grouped = {}
     for item in items:
         upper_type = item.get('upperType', '')
-        # Пропускаем денежные позиции
         if upper_type == 'CURRENCY':
             continue
 
         ticker = item.get('ticker') or item.get('symbol') or ''
-        name = item.get('displayName') or item.get('name') or ticker
+        if not ticker:
+            continue
+
         shares = float(item.get('quantity') or 0)
-        avg_price = float(item.get('balancePrice') or item.get('avgPrice') or 0)
+        value = float(item.get('currentValueRub') or item.get('currentValue') or 0)
         current_price = float(item.get('currentPrice') or 0)
-        value = float(item.get('currentValueRub') or item.get('currentValue') or (shares * current_price) or 0)
+        avg_price = float(item.get('balancePrice') or item.get('avgPrice') or 0)
         change_pct = float(item.get('unrealizedPercentPL') or item.get('dailyPercentPL') or 0)
-
+        name = item.get('displayName') or item.get('name') or ticker
         instrument_type = item.get('instrumentType', '').upper()
-        if instrument_type in ('BOND', 'BONDS'):
-            asset_type = 'bond'
+        asset_type = 'bond' if instrument_type in ('BOND', 'BONDS') else 'stock'
+
+        if ticker in grouped:
+            grouped[ticker]['shares'] += shares
+            grouped[ticker]['value'] += value
         else:
-            asset_type = 'stock'
+            grouped[ticker] = {
+                'ticker': ticker,
+                'name': name,
+                'shares': shares,
+                'avgPrice': avg_price,
+                'currentPrice': current_price,
+                'value': value,
+                'changePercent': change_pct,
+                'dividendYield': 0,
+                'type': asset_type,
+            }
 
-        total_value += value
-        positions.append({
-            'ticker': ticker,
-            'name': name,
-            'shares': shares,
-            'avgPrice': avg_price,
-            'currentPrice': current_price,
-            'value': value,
-            'changePercent': change_pct,
-            'dividendYield': 0,
-            'type': asset_type,
-        })
-
-    positions = [p for p in positions if p['shares'] > 0]
+    positions = [p for p in grouped.values() if p['shares'] > 0]
+    total_value = sum(p['value'] for p in positions)
     positions.sort(key=lambda x: x['value'], reverse=True)
 
     return {
