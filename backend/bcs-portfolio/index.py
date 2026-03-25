@@ -37,24 +37,29 @@ def get_bcs_portfolio(access_token: str) -> dict:
         return json.loads(resp.read().decode('utf-8'))
 
 
-def transform_portfolio(raw: dict) -> dict:
-    """Преобразует ответ БКС API в формат приложения"""
+def transform_portfolio(raw) -> dict:
+    """Преобразует ответ БКС API (список позиций) в формат приложения"""
     positions = []
     total_value = 0.0
 
     items = raw if isinstance(raw, list) else raw.get('positions', raw.get('items', raw.get('data', [])))
 
     for item in items:
-        ticker = item.get('ticker') or item.get('symbol') or item.get('isin') or ''
-        name = item.get('name') or item.get('shortName') or item.get('instrumentName') or ticker
-        shares = float(item.get('quantity') or item.get('qty') or item.get('balance') or 0)
-        avg_price = float(item.get('avgPrice') or item.get('averagePrice') or item.get('costPrice') or 0)
-        current_price = float(item.get('currentPrice') or item.get('lastPrice') or item.get('price') or 0)
-        value = float(item.get('value') or item.get('marketValue') or (shares * current_price) or 0)
-        change_pct = float(item.get('yield') or item.get('pnlPercent') or item.get('changePercent') or 0)
-        asset_type = item.get('type') or item.get('instrumentType') or 'stock'
+        upper_type = item.get('upperType', '')
+        # Пропускаем денежные позиции
+        if upper_type == 'CURRENCY':
+            continue
 
-        if asset_type.lower() in ('bond', 'облигация', 'bonds'):
+        ticker = item.get('ticker') or item.get('symbol') or ''
+        name = item.get('displayName') or item.get('name') or ticker
+        shares = float(item.get('quantity') or 0)
+        avg_price = float(item.get('balancePrice') or item.get('avgPrice') or 0)
+        current_price = float(item.get('currentPrice') or 0)
+        value = float(item.get('currentValueRub') or item.get('currentValue') or (shares * current_price) or 0)
+        change_pct = float(item.get('unrealizedPercentPL') or item.get('dailyPercentPL') or 0)
+
+        instrument_type = item.get('instrumentType', '').upper()
+        if instrument_type in ('BOND', 'BONDS'):
             asset_type = 'bond'
         else:
             asset_type = 'stock'
