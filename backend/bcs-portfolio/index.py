@@ -72,6 +72,7 @@ def transform_portfolio(raw: dict) -> dict:
             'type': asset_type,
         })
 
+    positions = [p for p in positions if p['shares'] > 0]
     positions.sort(key=lambda x: x['value'], reverse=True)
 
     return {
