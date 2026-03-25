@@ -50,6 +50,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif path == 'logout':
             token = event.get('headers', {}).get('x-auth-token', '')
             return logout_user(token)
+        elif path == 'forgot-password':
+            return forgot_password(body_data)
+        elif path == 'reset-password':
+            return reset_password(body_data)
     
     if method == 'GET' and path == 'verify':
         token = event.get('headers', {}).get('x-auth-token', '')
@@ -258,6 +262,106 @@ def verify_token(token: str) -> Dict[str, Any]:
             }
     finally:
         conn.close()
+
+def forgot_password(data: Dict[str, Any]) -> Dict[str, Any]:
+    email = data.get('email', '').strip().lower()
+    
+    if not email:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Email обязателен'}),
+            'isBase64Encoded': False
+        }
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id, email, name FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+            
+            if not user:
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Если email зарегистрирован, ссылка для сброса отправлена'}),
+                    'isBase64Encoded': False
+                }
+            
+            reset_token = generate_token()
+            expires_at = datetime.now() + timedelta(hours=1)
+            
+            cur.execute(
+                "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (%s, %s, %s)",
+                (user['id'], reset_token, expires_at)
+            )
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'message': 'Если email зарегистрирован, ссылка для сброса отправлена',
+                    'reset_token': reset_token
+                }),
+                'isBase64Encoded': False
+            }
+    finally:
+        conn.close()
+
+
+def reset_password(data: Dict[str, Any]) -> Dict[str, Any]:
+    token = data.get('token', '').strip()
+    new_password = data.get('new_password', '')
+    
+    if not token or not new_password:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Токен и новый пароль обязательны'}),
+            'isBase64Encoded': False
+        }
+    
+    if len(new_password) < 6:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Пароль должен быть не менее 6 символов'}),
+            'isBase64Encoded': False
+        }
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id, user_id FROM password_reset_tokens WHERE token = %s AND expires_at > NOW() AND used_at IS NULL",
+                (token,)
+            )
+            reset = cur.fetchone()
+            
+            if not reset:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Ссылка недействительна или истекла'}),
+                    'isBase64Encoded': False
+                }
+            
+            password_hash = hash_password(new_password)
+            cur.execute("UPDATE users SET password_hash = %s WHERE id = %s", (password_hash, reset['user_id']))
+            cur.execute("UPDATE password_reset_tokens SET used_at = NOW() WHERE id = %s", (reset['id'],))
+            cur.execute("UPDATE sessions SET expires_at = NOW() WHERE user_id = %s", (reset['user_id'],))
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'message': 'Пароль успешно изменён'}),
+                'isBase64Encoded': False
+            }
+    finally:
+        conn.close()
+
 
 def logout_user(token: str) -> Dict[str, Any]:
     if not token:

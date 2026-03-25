@@ -35,6 +35,33 @@
         "token": "string"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Forgot password - unknown email",
+      "method": "POST",
+      "path": "/?action=forgot-password",
+      "body": {
+        "email": "nonexistent@example.com"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Reset password - invalid token",
+      "method": "POST",
+      "path": "/?action=reset-password",
+      "body": {
+        "token": "invalidtoken",
+        "new_password": "newpassword123"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
     }
   ]
 }

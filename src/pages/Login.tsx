@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,7 +164,7 @@ const Login = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 space-y-3 text-center">
               <button
                 type="button"
                 onClick={() => {
@@ -179,6 +179,16 @@ const Login = () => {
                   ? 'Нет аккаунта? Зарегистрируйтесь' 
                   : 'Уже есть аккаунт? Войдите'}
               </button>
+              {isLogin && (
+                <div>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-purple-600 hover:underline"
+                  >
+                    Забыли пароль?
+                  </Link>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
