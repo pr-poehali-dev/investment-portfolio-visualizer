@@ -158,8 +158,20 @@ const PortfolioTabs = ({ activeTab, setActiveTab, portfolio, formatCurrency, for
                     <div className="flex items-center gap-3">
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${
                         position.type === 'stock' ? 'from-purple-500 to-blue-500' : 'from-blue-500 to-cyan-500'
-                      } flex items-center justify-center`}>
-                        <Icon name={position.type === 'stock' ? 'TrendingUp' : 'FileText'} size={24} className="text-white" />
+                      } flex items-center justify-center overflow-hidden`}>
+                        <img
+                          src={`https://finrange.com/storage/companies/logos/${position.ticker}.png`}
+                          alt={position.ticker}
+                          className="w-10 h-10 object-contain rounded-lg"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${position.type === 'stock' ? '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>' : '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>'}</svg>`;
+                            }
+                          }}
+                        />
                       </div>
                       <div>
                         <p className="font-bold text-lg">{position.ticker}</p>
