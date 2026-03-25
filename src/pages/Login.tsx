@@ -1,54 +1,63 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
-  const [refreshToken, setRefreshToken] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (localStorage.getItem('bcsRefreshToken')) {
+    if (localStorage.getItem('authToken')) {
       navigate('/', { replace: true });
     }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = refreshToken.trim();
-    if (!token) return;
-
     setLoading(true);
+
     try {
+      const action = isLogin ? 'login' : 'register';
+      const body = isLogin 
+        ? { email, password }
+        : { email, password, name };
+
       const response = await fetch(
-        'https://functions.poehali.dev/7d241d89-1faa-4c1a-8359-7cd0c1866374',
+        `https://functions.poehali.dev/4e1a1633-f163-4ca1-aae7-606612396d25?action=${action}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: token }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
         }
       );
 
       const data = await response.json();
 
-      if (response.ok && data.positions !== undefined) {
-        localStorage.setItem('bcsRefreshToken', token);
+      if (response.ok && data.token && data.user) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         window.dispatchEvent(new Event('storage'));
         navigate('/', { replace: true });
       } else {
         toast({
           variant: 'destructive',
-          title: 'Ошибка авторизации',
-          description: data.error || 'Неверный или истёкший токен',
+          title: 'Ошибка',
+          description: data.error || 'Что-то пошло не так',
         });
       }
-    } catch {
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Ошибка',
@@ -76,66 +85,110 @@ const Login = () => {
 
         <Card className="shadow-xl border-0">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="Key" size={20} />
-              Подключение БКС
-            </CardTitle>
+            <CardTitle>{isLogin ? 'Вход в систему' : 'Регистрация'}</CardTitle>
             <CardDescription>
-              Введите refresh token из личного кабинета БКС Брокер для загрузки портфеля
+              {isLogin 
+                ? 'Войдите в свой аккаунт для доступа к портфелю' 
+                : 'Создайте аккаунт для начала работы'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Имя</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Иван Иванов"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={!isLogin}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="token">Refresh Token</Label>
-                <Textarea
-                  id="token"
-                  placeholder="Вставьте ваш refresh token из БКС..."
-                  value={refreshToken}
-                  onChange={(e) => setRefreshToken(e.target.value)}
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@mail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  rows={4}
-                  className="font-mono text-xs resize-none"
                 />
               </div>
 
-              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800 space-y-1">
-                <p className="font-semibold flex items-center gap-2">
-                  <Icon name="Info" size={14} />
-                  Как получить токен?
-                </p>
-                <ol className="list-decimal list-inside space-y-1 text-xs text-blue-700">
-                  <li>Войдите в личный кабинет be.broker.ru</li>
-                  <li>Откройте инструменты разработчика (F12)</li>
-                  <li>Перейдите в Application → Local Storage</li>
-                  <li>Найдите ключ <code className="bg-blue-100 px-1 rounded">refresh_token</code> и скопируйте значение</li>
-                </ol>
+              <div className="space-y-2">
+                <Label htmlFor="password">Пароль</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+                {!isLogin && (
+                  <p className="text-xs text-muted-foreground">
+                    Минимум 6 символов
+                  </p>
+                )}
               </div>
 
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90"
-                disabled={loading || !refreshToken.trim()}
+                disabled={loading}
               >
                 {loading ? (
                   <>
                     <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
-                    Проверяем токен...
+                    Загрузка...
                   </>
                 ) : (
                   <>
-                    <Icon name="LogIn" size={16} className="mr-2" />
-                    Войти и загрузить портфель
+                    <Icon name={isLogin ? 'LogIn' : 'UserPlus'} size={16} className="mr-2" />
+                    {isLogin ? 'Войти' : 'Зарегистрироваться'}
                   </>
                 )}
               </Button>
             </form>
 
-            <p className="text-center text-xs text-muted-foreground mt-4">
-              Токен используется только для чтения данных и нигде не сохраняется
-            </p>
+            <div className="mt-6 space-y-3 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setEmail('');
+                  setPassword('');
+                  setName('');
+                }}
+                className="text-sm text-purple-600 hover:text-purple-700 hover:underline"
+              >
+                {isLogin 
+                  ? 'Нет аккаунта? Зарегистрируйтесь' 
+                  : 'Уже есть аккаунт? Войдите'}
+              </button>
+              {isLogin && (
+                <div>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-purple-600 hover:underline"
+                  >
+                    Забыли пароль?
+                  </Link>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
+
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Ваши данные защищены и не передаются третьим лицам
+        </p>
       </div>
     </div>
   );
