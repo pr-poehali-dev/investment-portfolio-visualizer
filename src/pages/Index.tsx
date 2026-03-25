@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import DashboardStats from '@/components/DashboardStats';
 import PortfolioTabs from '@/components/PortfolioTabs';
 import BcsConnect from '@/components/BcsConnect';
+import { fetchBcsPortfolio, getRefreshToken } from '@/lib/bcsToken';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
@@ -101,6 +102,14 @@ const Index = () => {
     }
 
     try {
+      // Если есть БКС refresh token — грузим портфель из БКС напрямую
+      if (getRefreshToken()) {
+        const raw = await fetchBcsPortfolio();
+        setPortfolio(mapBcsToPortfolio(raw));
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`https://functions.poehali.dev/6df5f7f8-9676-496b-acad-da6e7fe578ff?token=${encodeURIComponent(token)}`);
 
       if (response.status === 401) {

@@ -89,64 +89,70 @@ def transform_portfolio(raw: dict) -> dict:
 
 def handler(event: dict, context) -> dict:
     """
-    Получает портфель из БКС Брокер по refresh токену пользователя.
-    Сначала обменивает refresh token на access token, затем запрашивает портфель.
+    Принимает refreshToken или accessToken.
+    Если передан accessToken — использует его напрямую.
+    Если только refreshToken — обменивает на accessToken и возвращает его клиенту вместе с портфелем.
     """
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': ''}
 
-    headers = event.get('headers', {}) or {}
     body_str = event.get('body') or '{}'
     try:
         body = json.loads(body_str)
     except Exception:
         body = {}
 
-    refresh_token = (
-        headers.get('x-refresh-token') or
-        body.get('refreshToken') or
-        body.get('refresh_token') or
-        (event.get('queryStringParameters') or {}).get('refreshToken', '')
-    )
+    access_token = body.get('accessToken', '').strip()
+    refresh_token = body.get('refreshToken', '').strip()
+    new_access_token = None
 
-    if not refresh_token:
+    if not access_token and not refresh_token:
         return {
             'statusCode': 400,
             'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
-            'body': json.dumps({'error': 'Не передан refresh token'}),
+            'body': json.dumps({'error': 'Не передан токен'}),
         }
 
-    try:
-        access_token = get_access_token(refresh_token)
-        print(f'[bcs-portfolio] got access_token ok')
-    except urllib.error.HTTPError as e:
+    if not access_token:
         try:
-            error_body = e.read().decode('utf-8')
-        except Exception:
-            error_body = str(e)
-        print(f'[bcs-portfolio] keycloak HTTPError {e.code}: {error_body}')
-        return {
-            'statusCode': 401,
-            'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
-            'body': json.dumps({'error': 'Неверный или истёкший refresh token', 'detail': error_body}),
-        }
-    except Exception as e:
-        print(f'[bcs-portfolio] keycloak Exception: {e}')
-        return {
-            'statusCode': 502,
-            'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
-            'body': json.dumps({'error': f'Ошибка при получении токена: {e}'}),
-        }
+            access_token = get_access_token(refresh_token)
+            new_access_token = access_token
+            print('[bcs-portfolio] got access_token ok')
+        except urllib.error.HTTPError as e:
+            try:
+                error_body = e.read().decode('utf-8')
+            except Exception:
+                error_body = str(e)
+            print(f'[bcs-portfolio] keycloak HTTPError {e.code}: {error_body}')
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
+                'body': json.dumps({'error': 'Неверный или истёкший refresh token', 'detail': error_body}),
+            }
+        except Exception as e:
+            print(f'[bcs-portfolio] keycloak Exception: {e}')
+            return {
+                'statusCode': 502,
+                'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
+                'body': json.dumps({'error': f'Ошибка при получении токена: {e}'}),
+            }
 
     try:
         raw_portfolio = get_bcs_portfolio(access_token)
-        print(f'[bcs-portfolio] got portfolio ok, keys={list(raw_portfolio.keys()) if isinstance(raw_portfolio, dict) else type(raw_portfolio)}')
+        print(f'[bcs-portfolio] got portfolio ok')
     except urllib.error.HTTPError as e:
         try:
             error_body = e.read().decode('utf-8')
         except Exception:
             error_body = str(e)
         print(f'[bcs-portfolio] portfolio HTTPError {e.code}: {error_body}')
+        # access token протух — сообщаем клиенту чтобы переобменял
+        if e.code == 401:
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
+                'body': json.dumps({'error': 'access_token_expired'}),
+            }
         return {
             'statusCode': 502,
             'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
@@ -161,9 +167,12 @@ def handler(event: dict, context) -> dict:
         }
 
     portfolio = transform_portfolio(raw_portfolio)
+    result = {'portfolio': portfolio}
+    if new_access_token:
+        result['accessToken'] = new_access_token
 
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
-        'body': json.dumps({'portfolio': portfolio}),
+        'body': json.dumps(result),
     }

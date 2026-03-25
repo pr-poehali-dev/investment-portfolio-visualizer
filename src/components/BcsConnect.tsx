@@ -5,15 +5,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
-
-const BCS_API_URL = 'https://functions.poehali.dev/7d241d89-1faa-4c1a-8359-7cd0c1866374';
+import { setRefreshToken, fetchBcsPortfolio } from '@/lib/bcsToken';
 
 interface BcsConnectProps {
   onSuccess: (rawPortfolio: unknown) => void;
 }
 
 const BcsConnect = ({ onSuccess }: BcsConnectProps) => {
-  const [refreshToken, setRefreshToken] = useState('');
+  const [refreshToken, setRefreshTokenState] = useState('');
   const [loading, setLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const { toast } = useToast();
@@ -24,33 +23,19 @@ const BcsConnect = ({ onSuccess }: BcsConnectProps) => {
 
     setLoading(true);
     try {
-      const response = await fetch(BCS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: token }),
+      setRefreshToken(token);
+      const portfolio = await fetchBcsPortfolio();
+      onSuccess(portfolio);
+      toast({
+        title: 'Портфель загружен',
+        description: 'Данные из БКС успешно получены',
       });
-
-      const data = await response.json();
-
-      if (response.ok && data.portfolio !== undefined) {
-        localStorage.setItem('bcsRefreshToken', token);
-        onSuccess(data.portfolio);
-        toast({
-          title: 'Портфель загружен',
-          description: 'Данные из БКС успешно получены',
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Ошибка подключения',
-          description: data.error || 'Проверьте правильность токена',
-        });
-      }
-    } catch {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Проверьте правильность токена';
       toast({
         variant: 'destructive',
-        title: 'Ошибка',
-        description: 'Не удалось подключиться к серверу',
+        title: 'Ошибка подключения',
+        description: msg,
       });
     } finally {
       setLoading(false);
@@ -77,7 +62,7 @@ const BcsConnect = ({ onSuccess }: BcsConnectProps) => {
             id="bcs-token"
             placeholder="Вставьте ваш refresh token..."
             value={refreshToken}
-            onChange={(e) => setRefreshToken(e.target.value)}
+            onChange={(e) => setRefreshTokenState(e.target.value)}
             rows={3}
             className="font-mono text-xs resize-none bg-white"
           />
