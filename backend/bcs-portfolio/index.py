@@ -139,6 +139,15 @@ def handler(event: dict, context) -> dict:
 
     try:
         raw_portfolio = get_bcs_portfolio(access_token)
+        if isinstance(raw_portfolio, list) and raw_portfolio:
+            print(f'[bcs-portfolio] portfolio is list, first item keys: {list(raw_portfolio[0].keys())}')
+            print(f'[bcs-portfolio] first item: {raw_portfolio[0]}')
+        elif isinstance(raw_portfolio, dict):
+            print(f'[bcs-portfolio] portfolio is dict, keys: {list(raw_portfolio.keys())}')
+            items = raw_portfolio.get('positions') or raw_portfolio.get('items') or raw_portfolio.get('data') or []
+            if items:
+                print(f'[bcs-portfolio] first item keys: {list(items[0].keys())}')
+                print(f'[bcs-portfolio] first item: {items[0]}')
         print(f'[bcs-portfolio] got portfolio ok')
     except urllib.error.HTTPError as e:
         try:
