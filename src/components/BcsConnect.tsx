@@ -14,7 +14,6 @@ interface BcsConnectProps {
 const BcsConnect = ({ onSuccess }: BcsConnectProps) => {
   const [refreshToken, setRefreshTokenState] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const { toast } = useToast();
 
   const handleConnect = async () => {
@@ -68,26 +67,7 @@ const BcsConnect = ({ onSuccess }: BcsConnectProps) => {
           />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowHint(!showHint)}
-          className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-700"
-        >
-          <Icon name={showHint ? 'ChevronUp' : 'ChevronDown'} size={14} />
-          Как получить токен?
-        </button>
 
-        {showHint && (
-          <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800 space-y-1.5">
-            <ol className="list-decimal list-inside space-y-1 text-xs text-blue-700">
-              <li>Войдите в <strong>be.broker.ru</strong></li>
-              <li>Откройте инструменты разработчика <strong>F12</strong></li>
-              <li>Перейдите во вкладку <strong>Application → Local Storage</strong></li>
-              <li>Найдите ключ <code className="bg-blue-100 px-1 rounded">refresh_token</code></li>
-              <li>Скопируйте значение и вставьте выше</li>
-            </ol>
-          </div>
-        )}
 
         <Button
           onClick={handleConnect}
