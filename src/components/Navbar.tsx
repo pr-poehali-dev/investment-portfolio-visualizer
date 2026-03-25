@@ -12,7 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
-const Navbar = () => {
+interface NavbarProps {
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}
+
+const Navbar = ({ onRefresh, refreshing }: NavbarProps) => {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -61,6 +66,12 @@ const Navbar = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            {onRefresh && (
+              <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
+                <Icon name="RefreshCw" size={16} className={refreshing ? 'animate-spin mr-2' : 'mr-2'} />
+                Обновить
+              </Button>
+            )}
             <Button variant="ghost" size="sm">
               <Icon name="Bell" size={18} />
             </Button>

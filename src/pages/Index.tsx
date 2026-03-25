@@ -82,6 +82,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('portfolio');
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -91,6 +92,18 @@ const Index = () => {
   const handleBcsSuccess = (rawPortfolio: unknown) => {
     setPortfolio(mapBcsToPortfolio(rawPortfolio));
     setActiveTab('portfolio');
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const raw = await fetchBcsPortfolio();
+      setPortfolio(mapBcsToPortfolio(raw));
+    } catch (e) {
+      console.error('Refresh failed:', e);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const fetchPortfolio = async () => {
@@ -154,7 +167,7 @@ const Index = () => {
   if (!portfolio || portfolio.positions.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-orange-50">
-        <Navbar />
+        <Navbar onRefresh={getRefreshToken() ? handleRefresh : undefined} refreshing={refreshing} />
         
         <div className="container mx-auto px-4 py-16">
           <Card className="max-w-2xl mx-auto text-center animate-fade-in shadow-xl">
@@ -222,7 +235,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-orange-50">
-      <Navbar />
+      <Navbar onRefresh={getRefreshToken() ? handleRefresh : undefined} refreshing={refreshing} />
       
       <div className="container mx-auto px-4 py-8">
         <DashboardStats 
