@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import DashboardStats from '@/components/DashboardStats';
 import PortfolioTabs from '@/components/PortfolioTabs';
+import BcsConnect from '@/components/BcsConnect';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
@@ -32,6 +33,50 @@ interface Portfolio {
   }>;
 }
 
+const mapBcsToPortfolio = (raw: unknown): Portfolio => {
+  const data = raw as Record<string, unknown>;
+  const items: Record<string, unknown>[] = Array.isArray(raw)
+    ? (raw as Record<string, unknown>[])
+    : Array.isArray(data?.positions) ? (data.positions as Record<string, unknown>[])
+    : Array.isArray(data?.items) ? (data.items as Record<string, unknown>[])
+    : Array.isArray(data?.data) ? (data.data as Record<string, unknown>[])
+    : [];
+
+  const positions = items.map((item) => {
+    const shares = parseFloat(String(item.qty ?? item.quantity ?? item.balance ?? 0));
+    const avgPrice = parseFloat(String(item.avgPrice ?? item.averagePrice ?? item.costPrice ?? 0));
+    const currentPrice = parseFloat(String(item.currentPrice ?? item.lastPrice ?? item.price ?? 0));
+    const value = parseFloat(String(item.value ?? item.marketValue ?? 0)) || shares * currentPrice;
+    const changePercent = parseFloat(String(item.yield ?? item.pnlPercent ?? item.changePercent ?? 0));
+    const rawType = String(item.type ?? item.instrumentType ?? 'stock').toLowerCase();
+    const type = ['bond', 'bonds', 'облигация'].includes(rawType) ? 'bond' : 'stock';
+
+    return {
+      ticker: String(item.ticker ?? item.symbol ?? item.isin ?? ''),
+      name: String(item.name ?? item.shortName ?? item.instrumentName ?? item.ticker ?? ''),
+      shares,
+      avgPrice,
+      currentPrice,
+      value,
+      changePercent,
+      dividendYield: 0,
+      type,
+    };
+  });
+
+  const totalValue = positions.reduce((s, p) => s + p.value, 0);
+
+  return {
+    totalValue,
+    dailyChange: 0,
+    dailyChangePercent: 0,
+    monthlyDividends: 0,
+    yearlyDividends: 0,
+    positions,
+    dividends: [],
+  };
+};
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState('portfolio');
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
@@ -41,6 +86,11 @@ const Index = () => {
   useEffect(() => {
     fetchPortfolio();
   }, []);
+
+  const handleBcsSuccess = (rawPortfolio: unknown) => {
+    setPortfolio(mapBcsToPortfolio(rawPortfolio));
+    setActiveTab('portfolio');
+  };
 
   const fetchPortfolio = async () => {
     const token = localStorage.getItem('authToken');
@@ -152,6 +202,10 @@ const Index = () => {
               </Button>
             </CardContent>
           </Card>
+
+          <div className="max-w-2xl mx-auto mt-6">
+            <BcsConnect onSuccess={handleBcsSuccess} />
+          </div>
         </div>
       </div>
     );

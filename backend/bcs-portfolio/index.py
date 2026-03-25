@@ -1,5 +1,4 @@
 import json
-import os
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -30,7 +29,7 @@ def get_access_token(refresh_token: str) -> str:
 
 def get_bcs_portfolio(access_token: str) -> dict:
     """Получает портфель из БКС API"""
-    url = 'https://trade-api.bcs.ru/http/portfolio'
+    url = 'https://be.broker.ru/trade-api-bff-portfolio/api/v1/portfolio'
     req = urllib.request.Request(url, method='GET')
     req.add_header('Authorization', f'Bearer {access_token}')
 
