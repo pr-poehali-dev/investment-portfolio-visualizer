@@ -42,7 +42,7 @@ const Login = () => {
       if (response.ok && data.token && data.user) {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        window.location.href = '/';
+        navigate('/', { replace: true });
       } else {
         toast({
           variant: 'destructive',

@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +14,15 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('authToken');
+  const [token, setToken] = useState(() => localStorage.getItem('authToken'));
+
+  useEffect(() => {
+    const check = () => setToken(localStorage.getItem('authToken'));
+    window.addEventListener('storage', check);
+    check();
+    return () => window.removeEventListener('storage', check);
+  }, []);
+
   return token ? <>{children}</> : <Navigate to="/login" replace />;
 };
 

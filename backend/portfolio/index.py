@@ -7,27 +7,25 @@ from datetime import datetime
 
 def get_db_connection():
     schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
-    dsn = os.environ['DATABASE_URL']
-    if '?' in dsn:
-        dsn += f'&options=-csearch_path%3D{schema}'
-    else:
-        dsn += f'?options=-csearch_path%3D{schema}'
-    return psycopg2.connect(dsn)
+    conn = psycopg2.connect(os.environ['DATABASE_URL'], options=f'-c search_path={schema}')
+    return conn
 
 def verify_user(token: str) -> int:
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
             cur.execute(
-                """
+                f"""
                 SELECT u.id 
-                FROM users u
-                JOIN sessions s ON s.user_id = u.id
+                FROM {schema}.users u
+                JOIN {schema}.sessions s ON s.user_id = u.id
                 WHERE s.token = %s AND s.expires_at > NOW()
                 """,
                 (token,)
             )
             user = cur.fetchone()
+            print(f"verify_user token={token[:10]}... result={user}")
             return user['id'] if user else None
     finally:
         conn.close()

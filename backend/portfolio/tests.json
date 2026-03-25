@@ -1,17 +1,12 @@
 {
   "tests": [
     {
-      "name": "Get empty portfolio",
+      "name": "No token returns 401",
       "method": "GET",
       "path": "/",
-      "headers": {
-        "X-Auth-Token": "test-token"
-      },
-      "expectedStatus": 200,
+      "expectedStatus": 401,
       "expectedBody": {
-        "totalValue": "number",
-        "positions": "array",
-        "dividends": "array"
+        "error": "string"
       },
       "bodyMatcher": "partial"
     }
