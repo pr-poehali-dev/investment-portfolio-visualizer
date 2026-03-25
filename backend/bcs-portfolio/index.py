@@ -117,24 +117,46 @@ def handler(event: dict, context) -> dict:
 
     try:
         access_token = get_access_token(refresh_token)
+        print(f'[bcs-portfolio] got access_token ok')
     except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8') if e.fp else ''
-        print(f'[bcs-portfolio] keycloak error {e.code}: {error_body}')
+        try:
+            error_body = e.read().decode('utf-8')
+        except Exception:
+            error_body = str(e)
+        print(f'[bcs-portfolio] keycloak HTTPError {e.code}: {error_body}')
         return {
             'statusCode': 401,
             'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
             'body': json.dumps({'error': 'Неверный или истёкший refresh token', 'detail': error_body}),
         }
+    except Exception as e:
+        print(f'[bcs-portfolio] keycloak Exception: {e}')
+        return {
+            'statusCode': 502,
+            'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
+            'body': json.dumps({'error': f'Ошибка при получении токена: {e}'}),
+        }
 
     try:
         raw_portfolio = get_bcs_portfolio(access_token)
+        print(f'[bcs-portfolio] got portfolio ok, keys={list(raw_portfolio.keys()) if isinstance(raw_portfolio, dict) else type(raw_portfolio)}')
     except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8') if e.fp else ''
-        print(f'[bcs-portfolio] portfolio error {e.code}: {error_body}')
+        try:
+            error_body = e.read().decode('utf-8')
+        except Exception:
+            error_body = str(e)
+        print(f'[bcs-portfolio] portfolio HTTPError {e.code}: {error_body}')
         return {
             'statusCode': 502,
             'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
             'body': json.dumps({'error': 'Ошибка получения портфеля из БКС', 'detail': error_body}),
+        }
+    except Exception as e:
+        print(f'[bcs-portfolio] portfolio Exception: {e}')
+        return {
+            'statusCode': 502,
+            'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
+            'body': json.dumps({'error': f'Ошибка при запросе портфеля: {e}'}),
         }
 
     portfolio = transform_portfolio(raw_portfolio)
@@ -142,5 +164,5 @@ def handler(event: dict, context) -> dict:
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json', **CORS_HEADERS},
-        'body': json.dumps(portfolio),
+        'body': json.dumps({'portfolio': portfolio}),
     }
