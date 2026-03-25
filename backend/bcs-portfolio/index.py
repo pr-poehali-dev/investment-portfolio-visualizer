@@ -47,7 +47,7 @@ def transform_portfolio(raw: dict) -> dict:
     for item in items:
         ticker = item.get('ticker') or item.get('symbol') or item.get('isin') or ''
         name = item.get('name') or item.get('shortName') or item.get('instrumentName') or ticker
-        shares = float(item.get('qty') or item.get('quantity') or item.get('balance') or 0)
+        shares = float(item.get('quantity') or item.get('qty') or item.get('balance') or 0)
         avg_price = float(item.get('avgPrice') or item.get('averagePrice') or item.get('costPrice') or 0)
         current_price = float(item.get('currentPrice') or item.get('lastPrice') or item.get('price') or 0)
         value = float(item.get('value') or item.get('marketValue') or (shares * current_price) or 0)
