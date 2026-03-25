@@ -25,7 +25,7 @@ def verify_user(token: str) -> int:
                 (token,)
             )
             user = cur.fetchone()
-            print(f"verify_user token={token[:10]}... result={user}")
+            print(f"[portfolio] verify result={user}")
             return user['id'] if user else None
     finally:
         conn.close()
@@ -52,7 +52,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    token = event.get('headers', {}).get('x-auth-token', '')
+    headers = event.get('headers', {})
+    query = event.get('queryStringParameters', {}) or {}
+    token = headers.get('x-auth-token', '') or query.get('token', '')
+    print(f"[portfolio] token='{token[:15] if token else ''}'...")
     user_id = verify_user(token)
     
     if not user_id:

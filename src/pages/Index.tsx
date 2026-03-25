@@ -51,11 +51,7 @@ const Index = () => {
     }
 
     try {
-      const response = await fetch('https://functions.poehali.dev/6df5f7f8-9676-496b-acad-da6e7fe578ff', {
-        headers: {
-          'X-Auth-Token': token,
-        },
-      });
+      const response = await fetch(`https://functions.poehali.dev/6df5f7f8-9676-496b-acad-da6e7fe578ff?token=${encodeURIComponent(token)}`);
 
       if (response.status === 401) {
         localStorage.removeItem('authToken');
