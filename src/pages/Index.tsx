@@ -43,19 +43,22 @@ const Index = () => {
   }, []);
 
   const fetchPortfolio = async () => {
-    const token = localStorage.getItem('authToken');
+    const refreshToken = localStorage.getItem('bcsRefreshToken');
     
-    if (!token) {
+    if (!refreshToken) {
       navigate('/login');
       return;
     }
 
     try {
-      const response = await fetch(`https://functions.poehali.dev/6df5f7f8-9676-496b-acad-da6e7fe578ff?token=${encodeURIComponent(token)}`);
+      const response = await fetch('https://functions.poehali.dev/7d241d89-1faa-4c1a-8359-7cd0c1866374', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
 
       if (response.status === 401) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        localStorage.removeItem('bcsRefreshToken');
         navigate('/login');
         return;
       }

@@ -14,10 +14,10 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('authToken'));
+  const [token, setToken] = useState(() => localStorage.getItem('bcsRefreshToken'));
 
   useEffect(() => {
-    const check = () => setToken(localStorage.getItem('authToken'));
+    const check = () => setToken(localStorage.getItem('bcsRefreshToken'));
     window.addEventListener('storage', check);
     check();
     return () => window.removeEventListener('storage', check);
