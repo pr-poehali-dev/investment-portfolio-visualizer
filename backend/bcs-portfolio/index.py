@@ -49,6 +49,8 @@ def transform_portfolio(raw) -> dict:
         upper_type = item.get('upperType', '')
         if upper_type == 'CURRENCY':
             continue
+        if item.get('term') != 'T0':
+            continue
 
         ticker = item.get('ticker') or item.get('symbol') or ''
         if not ticker:
