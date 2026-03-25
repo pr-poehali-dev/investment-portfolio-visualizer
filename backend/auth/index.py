@@ -8,7 +8,13 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 def get_db_connection():
-    return psycopg2.connect(os.environ['DATABASE_URL'])
+    schema = os.environ.get('MAIN_DB_SCHEMA', 'public')
+    dsn = os.environ['DATABASE_URL']
+    if '?' in dsn:
+        dsn += f'&options=-csearch_path%3D{schema}'
+    else:
+        dsn += f'?options=-csearch_path%3D{schema}'
+    return psycopg2.connect(dsn)
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()

@@ -1,21 +1,17 @@
 {
   "tests": [
     {
-      "name": "Register new user",
+      "name": "Register - missing fields",
       "method": "POST",
       "path": "/?action=register",
       "body": {
-        "email": "test@example.com",
-        "password": "testpass123",
-        "name": "Test User"
+        "email": "",
+        "password": "",
+        "name": ""
       },
-      "expectedStatus": 200,
+      "expectedStatus": 400,
       "expectedBody": {
-        "user": {
-          "email": "string",
-          "name": "string"
-        },
-        "token": "string"
+        "error": "string"
       },
       "bodyMatcher": "partial"
     },
